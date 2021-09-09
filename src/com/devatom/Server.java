@@ -20,6 +20,7 @@ public class Server {
         // on initialise les connections avec le client
     }
     public void listenConnection() throws IOException {
+        System.out.println("Waiting for a new connection");
         connection = server.accept();
         System.out.println("New connection, from" + connection.toString());
         // et on ouvre les streams d'écoute et de réponse
@@ -38,19 +39,25 @@ public class Server {
 
     }
 
-    private void listenFlux() throws IOException {
+    private void listenFlux() throws IOException, NullPointerException {
         System.out.println("Waiting command");
-        String line = is.readLine();
-        os.write("Server has recieved the command " + line);
-        os.newLine();
-        os.flush();
-
-        if(line.equals("q")){
-            os.write("bye");
+        try{
+            String line = is.readLine();
+            os.write("Server has recieved the command " + line);
             os.newLine();
             os.flush();
+
+            if(line.equals("q")){
+                os.write("bye");
+                os.newLine();
+                os.flush();
+            }
+        }catch (NullPointerException | IOException e){
+            System.out.println("Connection with" + connection.toString() + " closed");
             connection.close();
-            throw new IOException("Connection closed");
+            os.close();
+            is.close();
+            listenConnection();
         }
         listenFlux();
     }
