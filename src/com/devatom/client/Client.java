@@ -1,6 +1,7 @@
-package com.devatom;
+package com.devatom.client;
 
 import java.io.*;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -8,18 +9,26 @@ public class Client {
 
     public static String HOST = "localhost";
     public static int PORT = 5555;
-    private final BufferedWriter os;
-    private final BufferedReader is;
+    private  BufferedWriter os;
+    private  BufferedReader is;
     private final BufferedReader consoleReader;
-    private final Socket connection;
-    public Client() throws IOException {
+    private  Socket connection;
+    public Client() {
 
         // on se connecte au serveur
-        connection = new Socket(Client.HOST, Client.PORT);
-
-        // on initialise les connections avec le serveur
-        os = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream()));
-        is = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        try {
+            connection = new Socket(Client.HOST, Client.PORT);
+            // on initialise les connections avec le serveur
+            os = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream()));
+            is = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        } catch (ConnectException e)
+        {
+            System.out.println("Server" + Client.HOST + ":" + Client.PORT + " Unreachable");
+            System.exit(1);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // on se connecte à la console client
         consoleReader = new BufferedReader(new InputStreamReader(System.in));
@@ -31,12 +40,15 @@ public class Client {
         os.write(inputCommand);
         os.newLine();
         os.flush();
-        String response = is.readLine();
-        System.out.println(response);
-        if(response.equals("bye")) {
-            connection.close();
-            System.out.println("Disconnected");
-            return;
+
+        String response = "";
+        while ((response=is.readLine())!=null) {
+            System.out.println(response);
+            if (response.equals("bye")) {
+                connection.close();
+                System.out.println("Disconnected");
+                return;
+            }
         }
         listen();
     }
