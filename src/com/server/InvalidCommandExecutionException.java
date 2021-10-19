@@ -1,6 +1,4 @@
-package com.devatom.server;
-
-import java.io.IOException;
+package com.server;
 
 /**
  * Exception renvoyée lorsque le serveur n'a pas pu executer la commande demandée

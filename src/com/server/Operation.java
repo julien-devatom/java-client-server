@@ -1,4 +1,4 @@
-package com.devatom.server;
+package com.server;
 
 import java.io.*;
 import java.nio.file.Files;

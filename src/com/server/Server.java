@@ -1,4 +1,4 @@
-package com.devatom.server;
+package com.server;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -32,7 +32,7 @@ public class Server {
      */
     public void listenConnection() {
         System.out.println("Waiting for a new connection");
-        Socket socket = null;
+        Socket socket;
         try {
             // on attend une connection
             socket = server.accept();

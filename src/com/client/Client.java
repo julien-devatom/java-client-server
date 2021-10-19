@@ -1,4 +1,4 @@
-package com.devatom.client;
+package com.client;
 
 import java.io.*;
 import java.net.ConnectException;
