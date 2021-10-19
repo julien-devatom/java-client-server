@@ -6,9 +6,8 @@ import java.net.Socket;
 
 public class Server {
 
-    static int PORT = 5555;
+    static int PORT = 5005;
     private final ServerSocket server;
-    private int clientNumber = 0;
     private  BufferedReader is;
     private  BufferedWriter os;
 
@@ -16,9 +15,14 @@ public class Server {
         // On initialise le serveur
         server = new ServerSocket(port);
 
-        System.out.println("Server OK");
-        // on initialise les connections avec le client
+        System.out.println("Server Ready !");
     }
+
+    /**
+     * listenConnection est une fonction récursive
+     * qui écoutre en continue les connections entrantes et les redirige sur des threads,
+     * implémenté ici dans la classe Connection
+     */
     public void listenConnection() {
         System.out.println("Waiting for a new connection");
         Socket socket = null;
@@ -29,7 +33,7 @@ public class Server {
         }
         //on démarre un thread
         if(socket != null)
-            new Connection(socket, clientNumber++).start();
+            new Connection(socket).start();
         listenConnection();
     }
 

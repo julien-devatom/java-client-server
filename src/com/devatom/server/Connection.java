@@ -2,69 +2,82 @@ package com.devatom.server;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 public class Connection extends Thread{
-    private int number;
+    public static int number = 0;
+    private int currentNumber;
     private final Socket socket;
-    private BufferedReader is;
-    private BufferedWriter os;
+    private DataInputStream is;
+    private DataOutputStream os;
+    private Operation executor;
 
-    public Connection(Socket socket, int number)
+    public Connection(Socket socket)
     {
         this.socket = socket;
-        this.number = number;
+        this.currentNumber = number++;
+
         try {
-            this.is = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.os = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            // on initialise le dossier client
+            String basePath = (new File("clientdir")).getAbsolutePath();
+            this.is = new DataInputStream(socket.getInputStream());
+            this.os = new DataOutputStream(socket.getOutputStream());;
+            this.executor = new Operation(basePath, socket.getInputStream(), socket.getOutputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
-        log("Connected, Connection n°" + number);
+        log("Connected, Connection n°" + currentNumber);
     }
     @Override
     public void run(){
-        try {
-            listenFlux();
-        } catch (IOException e) {
-            System.exit(0);
-        }
-
+        listenFlux();
     }
-    private void listenFlux() throws IOException {
+
+    private void listenFlux() {
+        log("Waiting for a command");
         try{
-            String line = is.readLine();
+            String line = is.readUTF();
             try {
-                os.write(runCommand(line));
+                log("Run command " + line);
+                String output = runCommand(line);
+                System.out.println("Command executed");
+                os.writeUTF(output);
+            } catch (IOException e) {
+
+                // capture des erreurs de commandes
+                os.writeUTF(e.getMessage());
             } catch (InterruptedException e) {
+                System.out.println("Interrupted Exception");
+                // capture de l'interruption de la connection
                 e.printStackTrace();
+                disconnect();
+                return;
             }
-            os.newLine();
-            os.flush();
             if(line.equals("q")){
-                os.write("bye");
-                os.newLine();
+                os.writeUTF("bye");
+                os.writeUTF("EOF");
                 os.flush();
                 disconnect();
+                return;
             }
+            os.writeUTF("EOF");
+            os.flush();
         }catch (NullPointerException | IOException e){
+            log(e.getMessage());
             disconnect();
+            return;
         }
         listenFlux();
     }
     private String runCommand(String cmd) throws IOException, InterruptedException {
-        Runtime run = Runtime.getRuntime();
-        Process pr = run.exec(cmd);
-        pr.waitFor();
-        BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-        String line = "";
-        List<String> lines = new ArrayList<String>();
-        while ((line=buf.readLine())!=null) {
-            lines.add(line);
-            System.out.println(line);
-        }
-        return String.join("\n", lines);
+        String operation = cmd.split(" ")[0];
+        String[] args = Arrays.copyOfRange(cmd.split(" "), 1, cmd.split(" ").length);
+
+        // on vérifie si l'opération est possible
+        if (!Arrays.asList(Operation.enabledOperations).contains(operation))
+                throw new CommandNotFoundException(operation, Operation.enabledOperations);
+        // et on l'execute
+        return executor.execute(operation, args);
     }
 
     private void disconnect(){
@@ -76,12 +89,11 @@ public class Connection extends Thread{
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.exit(0);
     }
     private void log(String message)
     {
         System.out.println(System.currentTimeMillis() +
                 " : From " + socket.toString() +
-                "(n°" + number + "): " + message);
+                "(n°" + currentNumber + "): " + message);
     }
 }
