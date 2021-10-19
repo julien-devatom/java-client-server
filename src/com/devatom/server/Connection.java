@@ -15,14 +15,14 @@ public class Connection extends Thread{
     public Connection(Socket socket)
     {
         this.socket = socket;
-        this.currentNumber = number++;
+        this.currentNumber = ++number;
 
         try {
             // on initialise le dossier client
             String basePath = (new File("clientdir")).getAbsolutePath();
             this.is = new DataInputStream(socket.getInputStream());
-            this.os = new DataOutputStream(socket.getOutputStream());;
-            this.executor = new Operation(basePath, socket.getInputStream(), socket.getOutputStream());
+            this.os = new DataOutputStream(socket.getOutputStream());
+            this.executor = new Operation(basePath, is, os);
         } catch (IOException e) {
             e.printStackTrace();
         }

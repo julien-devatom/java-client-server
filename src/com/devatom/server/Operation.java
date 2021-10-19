@@ -1,18 +1,22 @@
 package com.devatom.server;
 
 import java.io.*;
+import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
 
 public class Operation {
 
     public static String[] enabledOperations = new String[] {"mkdir", "ls", "cd", "delete", "download", "upload"};
-    private String path = "";
-    private InputStream is;
-    private OutputStream os;
+    private String path;
+    private DataInputStream is;
+    private DataOutputStream os;
     private final String basePath;
 
-    public Operation(String basePath, InputStream is, OutputStream os) {
+    public Operation(String basePath, DataInputStream is, DataOutputStream os) throws IOException {
         this.basePath = basePath;
         this.path = basePath;
         this.is = is;
@@ -102,34 +106,31 @@ public class Operation {
             throw new InvalidCommandExecutionException("Cannot delete the file " + filename);
     }
     private void download(String filename) throws IOException {
-        String localPath = (new File(path, filename)).getAbsolutePath();
-        try {
-            FileInputStream fileInputStream = new FileInputStream(localPath);
-            byte[] bytes = new byte[16*1024];
 
-            int count;
-            while ((count = fileInputStream.read(bytes)) > 0) {
-                os.write(bytes, 0, count);
-            }
-        } catch (FileNotFoundException e) {
-            throw new InvalidCommandExecutionException("File " + filename + " doesn't exists");
-        }
+        // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers...
+        byte[] bytes = Files.readAllBytes(Paths.get(path, filename));
+        int length = bytes.length;
+        os.writeInt(length);
+        os.write(bytes,0,length);
     }
     private void upload(String filename) throws IOException {
-        File newFile = new File(path, filename);
-        if (!newFile.createNewFile())
-            throw new InvalidCommandExecutionException("file " + filename + " already exists..");
+        String fullPath = Path.of(path, filename).toString();
 
-        FileOutputStream out = new FileOutputStream(newFile.getAbsolutePath());
-        // on copy le flux de données
-        byte[] bytes = new byte[16*1024];
-        int count;
-        while ((count = is.read(bytes)) > 0) {
-            System.out.print("Read " + count + " bytes" + bytes.toString() + "\r");
-            out.write(bytes, 0, count);
+        // on lit les données envoyées, correspondant au fichier a télécharger
+        int length = is.readInt();
+        byte[] buffer  = new byte [length];
+        int count = 0;
+        while (count<length) {
+            count+= is.read(buffer, count, length-count);
         }
-        System.out.println("Uploadedddd");
-        out.close();
-
+        // si le fichier existe déjà, on écrit rien
+        if ((new File(fullPath)).exists())
+            throw new InvalidCommandExecutionException("File " + fullPath + " already exists");
+        // sinon, on écrit le fichier
+        // on ferme toujours le fichier pour éviter de le garder en mémoire, via l'automatic ressource managment
+        try (OutputStream outFile = new FileOutputStream(Path.of(path, filename).toString())) {
+            outFile.write(buffer);
+            outFile.flush();
+        }
     }
 }
