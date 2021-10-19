@@ -13,14 +13,41 @@ import java.util.Objects;
 
 public class Client {
 
-    public static String HOST = "localhost";
+    public static String HOST = "127.0.0.1";
     public static int PORT = 5005;
     private  DataOutputStream os;
     private  DataInputStream is;
-    private final BufferedReader consoleReader;
+    private static final BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
     private  Socket connection;
-    public Client() {
 
+    public static boolean validate(final String ip) {
+        // IPv4 pattern
+        String PATTERN = "^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$";
+        return ip.matches(PATTERN);
+    }
+    public static void EntrerAdresseEtPort() throws IOException {
+        System.out.format("SVP entrer l'adresse IP et le port avec un enter entre chaque info\n");
+        Client.HOST = consoleReader.readLine();
+        Client.PORT = Integer.parseInt(consoleReader.readLine());
+
+        while(Client.PORT<5002 || Client.PORT>5049)
+        {
+            System.out.format("SVP entrer un port entre 5002 et 5049\n");
+            Client.PORT = Integer.parseInt(consoleReader.readLine());
+        }
+        while(!validate(Client.HOST))
+        {
+            System.out.format("SVP entrer un addresse IP valide XXX.XXX.XXX.XXX\n");
+            Client.HOST = consoleReader.readLine();
+        }
+    }
+    public Client() {
+        try{
+            Client.EntrerAdresseEtPort();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
         // on se connecte au serveur
         try {
             connection = new Socket(Client.HOST, Client.PORT);
@@ -35,9 +62,6 @@ public class Client {
         catch (IOException e) {
             e.printStackTrace();
         }
-
-        // on se connecte à la console client
-        consoleReader = new BufferedReader(new InputStreamReader(System.in));
         System.out.println("Connected to the server " + connection.toString());
     }
 
