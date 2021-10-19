@@ -2,6 +2,9 @@ package com.devatom.server;
 
 import java.io.*;
 import java.net.Socket;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 
 public class Connection extends Thread{
@@ -92,8 +95,9 @@ public class Connection extends Thread{
     }
     private void log(String message)
     {
-        System.out.println(System.currentTimeMillis() +
-                " : From " + socket.toString() +
-                "(n°" + currentNumber + "): " + message);
+        String ip_client = socket.getRemoteSocketAddress().toString().split("/")[1];
+        //LocalDate date = LocalDate.now();
+        LocalTime time = LocalTime.now().truncatedTo(ChronoUnit.SECONDS);
+        System.out.println("[" + ip_client + " // " + LocalDate.now() + " @ " + time + "] : " + message);
     }
 }

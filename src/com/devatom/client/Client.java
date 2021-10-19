@@ -34,7 +34,7 @@ public class Client {
     }
     private void SetupServerAddressAndPort() throws IOException {
         while (Client.isIPInvalid()){
-            System.out.println("Please enter the IP address of the server (XXX.XXX.XXX.XXX)");
+            System.out.println("Please enter the IP address of the server (XXX.XXX.XXX.XXX0)");
             System.out.print("IP address = ");
             Client.HOST = consoleReader.readLine();
             if(Client.isIPInvalid())
