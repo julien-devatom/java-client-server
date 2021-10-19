@@ -2,8 +2,11 @@ package com.devatom.server;
 
 import java.io.IOException;
 
+/**
+ * La commande demandé n'existe pas. On affiche donc les commandes disponibles sur le serveur.
+ */
 public class CommandNotFoundException extends IOException {
     public CommandNotFoundException(String cmd, String[] enabledOperations) {
-        super(cmd + " must be one of " + String.join(", ", enabledOperations));
+        super(cmd + " is not a valid command. Try one of " + String.join(", ", enabledOperations));
     }
 }

@@ -1,13 +1,16 @@
 package com.devatom.server;
 
 import java.io.*;
-import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Operation permet d'executer les opérations serveur, telles que lire les fichiers, créer des dossiers ...
+ * Excepté pour la lecture et l'écriture de flux de fichiers ( upload & download), cette classe ne communique pas avec le client.
+ * Autrement dit, le client ne recevra jamasi de message venant de cette classe. Tout cela ce passe dans la classe Connection.
+ */
 public class Operation {
 
     public static String[] enabledOperations = new String[] {"mkdir", "ls", "cd", "delete", "download", "upload"};
@@ -22,6 +25,13 @@ public class Operation {
         this.is = is;
         this.os = os;
     }
+
+    /**
+     * Execute les operations définies
+     * @param operation opération a effectuer
+     * @param args arguments si nécessaire
+     * @return Le message a renvoyer au client
+     */
     public String execute(String operation, String[] args){
         try {
             String output;
@@ -60,10 +70,21 @@ public class Operation {
                     throw new CommandNotFoundException(operation, args);
             }
             return output;
-        } catch (IOException e) {
+        } catch (IOException | InvalidCommandExecutionException e) {
+            // capture des erreurs d'execution des commandes
             return "ERROR : " + e.getMessage();
         }
     }
+
+    /**
+     * Cette methode permet de se déplacer dans l'arboréscence des fichiers de stockage.
+     * Il y a une particularité pour l'argument ".." qui permet de remonter dans l'arborescence$
+     *
+     * On ne peut pas se déplacer vers un fichier en lui donnant unchemin absolue, mais uniquement un chemin relatif
+     *
+     * @param folderName : le nom nu dossier ou se déplacer
+     * @throws InvalidCommandExecutionException : si on esssaie de remonter trop haut dans l'arborescence, on bloque l'utilisateur pour protéger le serveur
+     */
     private void changeDirectory(String folderName) throws InvalidCommandExecutionException {
         if (folderName.equals("..")) {
             if (Objects.equals(path, basePath))
@@ -82,13 +103,23 @@ public class Operation {
             }
         }
     }
+
+    /**
+     * Permet de lister les fichiers contenus dans le dossier courant
+     * @return Un nom de fichier par ligne, "Empty directory" si le dossier est vide
+     */
     private String list() {
         String[] pathnames = (new File(path)).list();
-        if (pathnames != null)
+        if (pathnames != null && pathnames.length > 0)
             return String.join("\n", pathnames);
         else return "Empty directory";
     }
 
+    /**
+     * Permet de créer un dossier à partir du chemin courant
+     * @param dirName nom du nouveau dossier
+     * @throws InvalidCommandExecutionException : envoyé si le dossier existe déjà
+     */
     private void makeDirectory(String dirName) throws InvalidCommandExecutionException {
         File file = new File(path, dirName);
         if (file.exists())
@@ -98,6 +129,12 @@ public class Operation {
             throw new InvalidCommandExecutionException("Cannot create the directory "+ dirName);
 
     }
+
+    /**
+     * Permet de supprimer uin fichier ou un dossier
+     * @param filename : nom du fichier / dossier à supprimer
+     * @throws InvalidCommandExecutionException : envoyé si le fichier/dossier n'existe pas
+     */
     private void deleteFile(String filename) throws InvalidCommandExecutionException {
         File file = new File(path, filename);
         if (!file.exists())
@@ -105,15 +142,35 @@ public class Operation {
         if (!file.delete())
             throw new InvalidCommandExecutionException("Cannot delete the file " + filename);
     }
-    private void download(String filename) throws IOException {
 
-        // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers...
-        byte[] bytes = Files.readAllBytes(Paths.get(path, filename));
-        int length = bytes.length;
-        os.writeInt(length);
-        os.write(bytes,0,length);
+    /**
+     * Permet de télécherger un dossier du serveur vers le client
+     * @param filename nom du fichier à télécharger
+     * @throws InvalidCommandExecutionException : envoyé si le fichier ne peut pas être lue
+     */
+    private void download(String filename) throws InvalidCommandExecutionException {
+
+        try{
+            // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers...
+            byte[] bytes = Files.readAllBytes(Paths.get(path, filename));
+            int length = bytes.length;
+            os.writeInt(length);
+            os.write(bytes,0,length);
+        } catch (IOException e){
+            throw new InvalidCommandExecutionException("file" + filename + "does not exist");
+        }
     }
-    private void upload(String filename) throws IOException {
+
+    /**
+     * Permet de recevoir un fiichier d'un client
+     * @param filename nom du fichier
+     * @throws IOException Renvoyé si le client n'envoie pas bien le fichier : on doit d'abord recevoir la taille du fichier puis ses données
+     * @throws InvalidCommandExecutionException Renvoyé si le fichier existe déjà
+     *
+     * NB : On capture toujours le flux du fichier même si on a une InvalidCommandExecutionException,
+     * car le client l'a déjà envoyé. Ainsi, on clean le stream de données.
+     */
+    private void upload(String filename) throws IOException, InvalidCommandExecutionException {
         String fullPath = Path.of(path, filename).toString();
 
         // on lit les données envoyées, correspondant au fichier a télécharger
