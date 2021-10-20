@@ -238,7 +238,7 @@ public class Client {
         }
         // si le fichier existe déjà, on écrit rien.
         if (!file.createNewFile())
-            throw new InvalidClientExecutionException("File" + filename + " already exists...");
+            throw new InvalidClientExecutionException("File " + filename + " already exists...");
         // sinon, on écrit le fichier
         try (FileOutputStream outFile = new FileOutputStream(file.getAbsolutePath())) {
             outFile.write(buffer);

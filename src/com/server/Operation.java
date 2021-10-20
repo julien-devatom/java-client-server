@@ -169,6 +169,8 @@ public class Operation {
         } catch (IOException e){
             throw new InvalidCommandExecutionException("file " + filename + " does not exist");
         }
+        if(toZip) // on supprime l'archive crée une fois le transfert effectué
+            (new File(path, filename)).delete();
     }
 
     /**
