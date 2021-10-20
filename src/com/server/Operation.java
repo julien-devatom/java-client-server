@@ -1,5 +1,7 @@
 package com.server;
 
+import com.utils.ZipFile;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,8 +60,12 @@ public class Operation {
                     break;
                 case "download":
                     fileName = args[0];
-                    download(fileName);
-                    output = "file " + fileName + " downloaded";
+                    Boolean toZip = args.length > 1 && Objects.equals(args[1], "-z") && args[0].split(".zip").length == 1;
+                    download(fileName, toZip);
+                    if(toZip)
+                        output = "file " + fileName  + ".zip downloaded";
+                    else
+                        output = "file " + fileName  + " downloaded";
                     break;
                 case "upload":
                     fileName = args[0];
@@ -148,16 +154,20 @@ public class Operation {
      * @param filename nom du fichier à télécharger
      * @throws InvalidCommandExecutionException : envoyé si le fichier ne peut pas être lue
      */
-    private void download(String filename) throws InvalidCommandExecutionException {
-
+    private void download(String filename, Boolean toZip) throws InvalidCommandExecutionException, IOException {
+        if (toZip) {
+            ZipFile.zipFile(Paths.get(path, filename).toString());
+            filename = filename.concat(".zip");
+        }
         try{
-            // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers...
+            // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers... problème de mémoire
             byte[] bytes = Files.readAllBytes(Paths.get(path, filename));
             int length = bytes.length;
+            System.out.println(length);
             os.writeInt(length);
             os.write(bytes,0,length);
         } catch (IOException e){
-            throw new InvalidCommandExecutionException("file" + filename + "does not exist");
+            throw new InvalidCommandExecutionException("file " + filename + " does not exist");
         }
     }
 

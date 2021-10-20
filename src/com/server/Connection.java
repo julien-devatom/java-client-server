@@ -26,7 +26,9 @@ public class Connection extends Thread{
 
         try {
             // on initialise le dossier client ( un seul dossiert pour tous les clients)
-            String basePath = (new File("clientdir")).getAbsolutePath();
+            File rootDirectory = new File("clientdir");
+            rootDirectory.mkdir();
+            String basePath = rootDirectory.getAbsolutePath();
             this.is = new DataInputStream(socket.getInputStream());
             this.os = new DataOutputStream(socket.getOutputStream());
 

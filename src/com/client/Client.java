@@ -1,5 +1,7 @@
 package com.client;
 
+import com.utils.ZipFile;
+
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -106,22 +108,26 @@ public class Client {
         String inputCommand = consoleReader.readLine();
         try {
             // on confirme la commande
-            confirmCommand(inputCommand);
+            inputCommand = cleanAndConfirmCommand(inputCommand);
         } catch (InvalidClientExecutionException e) {
             // la commande est mal formulée
             System.out.println(e.getMessage());
             listen();
             return;
         }
-        // la commande a été vérifiée, on l'envoie donc au serveur
-        os.writeUTF(inputCommand);
-        if (Objects.equals(inputCommand.split(" ")[0], "upload"))
-            upload(inputCommand);
-        if (Objects.equals(inputCommand.split(" ")[0], "download"))
-            download(inputCommand);
-        if (Objects.equals(inputCommand.split(" ")[0], "disconnect")) {
-            disconnect();
-            return;
+        try{
+            // la commande a été vérifiée, on l'envoie donc au serveur
+            os.writeUTF(inputCommand);
+            if (Objects.equals(inputCommand.split(" ")[0], "upload"))
+                upload(inputCommand);
+            if (Objects.equals(inputCommand.split(" ")[0], "download"))
+                download(inputCommand);
+            if (Objects.equals(inputCommand.split(" ")[0], "disconnect")) {
+                disconnect();
+                return;
+            }
+        } catch (InvalidClientExecutionException e) {
+            System.out.println("ERROR : " + e.getMessage());
         }
 
         String response;
@@ -161,8 +167,9 @@ public class Client {
      *
      * @param inputCommand commande d'entrée
      * @throws InvalidClientExecutionException : la commande est mal structurée.
+     * @return La commande modifié si besoin (pour zipper)
      */
-    private void confirmCommand(String inputCommand) throws InvalidClientExecutionException {
+    private String cleanAndConfirmCommand(String inputCommand) throws InvalidClientExecutionException {
         String command = inputCommand.split(" ")[0];
         // on doit spécifier un fichier a télécharger
         if (Objects.equals(command, "download") & inputCommand.split(" ").length < 2) {
@@ -178,10 +185,15 @@ public class Client {
         }
         // on vérifie si le fichier a upload existe, avant de prévenir le serveur
         if (Objects.equals(command, "upload")) {
-            if (!(new File(inputCommand.split(" ")[1])).exists())
+            if (inputCommand.split(" ").length > 2) {
+                if (Objects.equals(inputCommand.split(" ")[2], "-z")) {
+                    inputCommand = inputCommand.replace(inputCommand.split(" ")[1], inputCommand.split(" ")[1].concat(".zip"));
+                }
+            }
+            if (!(new File(inputCommand.split(" ")[1])).exists() || !(new File(inputCommand.split(" ")[1].replace(".zip", "")).exists()))
                 throw new InvalidClientExecutionException("Filename " + inputCommand.split(" ")[1] + " doesn't exist");
         }
-
+        return inputCommand;
     }
 
     /**
@@ -192,11 +204,15 @@ public class Client {
      */
     private void upload(String inputCommand) throws IOException {
         String filename = inputCommand.split(" ")[1];
-
+        if (inputCommand.split(" ").length > 2){
+            if(Objects.equals(inputCommand.split(" ")[2], "-z")){
+                if (!(new File(filename)).exists())
+                    ZipFile.zipFile(filename.replace(".zip", ""));
+            }
+        }
         // on upload tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers...
         byte[] bytes = Files.readAllBytes(Paths.get(filename));
         int length = bytes.length;
-        System.out.println(length);
         os.writeInt(length);
         os.write(bytes, 0, length);
     }
@@ -209,6 +225,8 @@ public class Client {
      */
     private void download(String inputCommand) throws IOException {
         String filename = inputCommand.split(" ")[1];
+        if(inputCommand.split(" ").length > 2 && Objects.equals(inputCommand.split(" ")[2], "-z") && filename.split(".zip").length == 1)
+            filename = filename.concat(".zip");
         File file = new File(filename);
 
         // on lit les données envoyées, correspondant au fichier a télécharger
