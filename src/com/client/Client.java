@@ -14,10 +14,10 @@ public class Client {
 
     public static String HOST = ""; // ip du serveur
     public static int PORT = 0; // port du serveur
-    private DataOutputStream os; // flux pour écrire au serveur
+    private DataOutputStream os; // flux pour ecrire au serveur
     private DataInputStream is; // flux pour lire les données serveur
     private static final BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in)); // flux pour lire les commandes du client
-    private Socket connection; // défini la connection socket avec le client. On la sauvegarde pour pouvoir déconnecter le client proprement.
+    private Socket connection; // defini la connection socket avec le client. On la sauvegarde pour pouvoir déconnecter le client proprement.
 
     /**
      * Permet d'ivalider l'ip HOST en tant que IPv4
@@ -42,16 +42,16 @@ public class Client {
 
     /**
      * Permet au client d'entrer le serveur sur lequel il souhaite se connecter
-     * L'ip doit être une IPv4, et le port dans le range [5002, 5049]
+     * L'ip doit etre une IPv4, et le port dans le range [5002, 5049]
      * <p>
      * Le client doit entrer une IP valide avant de choisir son port
      *
-     * @throws IOException Renvoyé si il y a une erreur avec la console client
+     * @throws IOException Renvoye si il y a une erreur avec la console client
      */
     private void SetupServerAddressAndPort() throws IOException {
         // validation de l'ip
         while (Client.isIPInvalid()) {
-            System.out.println("Please enter the IP address of the server (XXX.XXX.XXX.XXX0)");
+            System.out.println("Please enter the IP address of the server (XXX.XXX.XXX.XXX)");
             System.out.print("IP address = ");
             Client.HOST = consoleReader.readLine();
             if (Client.isIPInvalid())
@@ -66,7 +66,7 @@ public class Client {
                 if (Client.PORT < 5002 || Client.PORT > 5049)
                     System.out.println(Client.PORT + " is not a valid port");
             } catch (NumberFormatException e) {
-                // le client a entré des lettres...
+                // le client a entre des lettres...
                 System.out.println("Please enter a number..");
             }
         }
@@ -75,8 +75,8 @@ public class Client {
     }
 
     /**
-     * Connection avec le serveur, dont l'ip et le port a été validé.
-     * On défini la connection socket ainsi que les flux de communication avec le serveur
+     * Connection avec le serveur, dont l'ip et le port a ete valide.
+     * On defini la connection socket ainsi que les flux de communication avec le serveur
      *
      * @throws IOException
      */
@@ -90,6 +90,8 @@ public class Client {
             is = new DataInputStream(connection.getInputStream());
         } catch (ConnectException | UnknownHostException e) {
             System.out.println("Server" + Client.HOST + ":" + Client.PORT + " Unreachable");
+            Client.HOST = "";
+            Client.PORT = 0;
             SetupServerAddressAndPort();
         } catch (IOException e) {
             e.printStackTrace();
@@ -98,9 +100,9 @@ public class Client {
 
     /**
      * On attend une commande de l'utilisateur.
-     * Lorsqu'on capture une commande, on vérifie si elle est bien formulée avant d'envoyer des données au serveur
-     * Les commandes upload et download nécessite plus de logique coté client que les autres, étant donnée qu'on doit
-     * envoyer / recevoir un flux de données avant de réécouter une commance du client
+     * Lorsqu'on capture une commande, on verifie si elle est bien formulee avant d'envoyer des donnees au serveur
+     * Les commandes upload et download necessite plus de logique cote client que les autres, etant donne qu'on doit
+     * envoyer / recevoir un flux de donnees avant de reecouter une commance du client
      *
      * @throws IOException si il y a une erreur avec le terminal du client
      */
@@ -110,13 +112,13 @@ public class Client {
             // on confirme la commande
             inputCommand = cleanAndConfirmCommand(inputCommand);
         } catch (InvalidClientExecutionException e) {
-            // la commande est mal formulée
+            // la commande est mal formulee
             System.out.println(e.getMessage());
             listen();
             return;
         }
         try{
-            // la commande a été vérifiée, on l'envoie donc au serveur
+            // la commande a ete verifiee, on l'envoie donc au serveur
             os.writeUTF(inputCommand);
             if (Objects.equals(inputCommand.split(" ")[0], "upload"))
                 upload(inputCommand);
@@ -147,9 +149,9 @@ public class Client {
     }
 
     /**
-     * Déconnection du serveur
+     * Deconnection du serveur
      *
-     * @throws IOException : si il y a un problème avec la connection socket
+     * @throws IOException : si il y a un probleme avec la connection socket
      */
     private void disconnect() throws IOException {
         connection.close();
@@ -161,29 +163,29 @@ public class Client {
 
     /**
      * Permet de confirmer la structure d'une commande avant de l'envoyer au serveur.
-     * On n'empeche pas les commandes que l'on ne connais pas coté client,
+     * On n'empeche pas les commandes que l'on ne connais pas cote client,
      * immaginons que le servaur accepte d'autre commandes que le client ne connaitrait pas
      * (par exemple pwd), on laisse le serveur nous dire quelles sont les commandes possibles
      *
-     * @param inputCommand commande d'entrée
-     * @throws InvalidClientExecutionException : la commande est mal structurée.
-     * @return La commande modifié si besoin (pour zipper)
+     * @param inputCommand commande d'entree
+     * @throws InvalidClientExecutionException : la commande est mal structuree.
+     * @return La commande modifie si besoin (pour zipper)
      */
     private String cleanAndConfirmCommand(String inputCommand) throws InvalidClientExecutionException {
         String command = inputCommand.split(" ")[0];
-        // on doit spécifier un fichier a télécharger
+        // on doit specifier un fichier a telecharger
         if (Objects.equals(command, "download") & inputCommand.split(" ").length < 2) {
             throw new InvalidClientExecutionException("Please, enter a filename");
         }
-        // on doit spécifier un fichier a uploader
+        // on doit specifier un fichier a uploader
         if (Objects.equals(command, "upload") & inputCommand.split(" ").length < 2) {
             throw new InvalidClientExecutionException("Please, enter a filename");
         }
-        // on doit spécifier un fichier a supprimer
+        // on doit specifier un fichier a supprimer
         if (Objects.equals(command, "remove") & inputCommand.split(" ").length < 2) {
             throw new InvalidClientExecutionException("Please, enter a filename");
         }
-        // on vérifie si le fichier a upload existe, avant de prévenir le serveur
+        // on verifie si le fichier a upload existe, avant de prevenir le serveur
         if (Objects.equals(command, "upload")) {
             if (inputCommand.split(" ").length > 2) {
                 if (Objects.equals(inputCommand.split(" ")[2], "-z")) {
@@ -218,10 +220,10 @@ public class Client {
     }
 
     /**
-     * Permet de télécharger un fichier distant
+     * Permet de telecharger un fichier distant
      *
-     * @param inputCommand permet de récupérer le nom du fichier
-     * @throws IOException si il y a une erreur lors de la lecture/l'écriture du fichier
+     * @param inputCommand permet de recuperer le nom du fichier
+     * @throws IOException si il y a une erreur lors de la lecture/l'ecriture du fichier
      */
     private void download(String inputCommand) throws IOException {
         String filename = inputCommand.split(" ")[1];
@@ -229,22 +231,22 @@ public class Client {
             filename = filename.concat(".zip");
         File file = new File(filename);
 
-        // on lit les données envoyées, correspondant au fichier a télécharger
+        // on lit les donnees envoyees, correspondant au fichier a telecharger
         int length = is.readInt();
         byte[] buffer = new byte[length];
         int count = 0;
         while (count < length) {
             count += is.read(buffer, count, length - count);
         }
-        // si le fichier existe déjà, on écrit rien.
+        // si le fichier existe deja, on ecrit rien.
         if (!file.createNewFile())
             throw new InvalidClientExecutionException("File " + filename + " already exists...");
-        // sinon, on écrit le fichier
+        // sinon, on ecrit le fichier
         try (FileOutputStream outFile = new FileOutputStream(file.getAbsolutePath())) {
             outFile.write(buffer);
             outFile.flush();
         }
-        // on ferme toujours le fichier pour éviter de le garder en mémoire !
+        // on ferme toujours le fichier pour eviter de le garder en memoire !
     }
 
     public static void main(String[] args) {
