@@ -9,8 +9,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 
 /**
- * Une instance de Connection représente un lien socket entre le serveur et un client spécifique. Ce lien est executé dans un thread,
- * de telle sorte a libérer le thread principal pour l'écoute des connections
+ * Une instance de Connection represente un lien socket entre le serveur et un client specifique. Ce lien est execute dans un thread,
+ * de telle sorte a liberer le thread principal pour l'ecoute des connections
  */
 public class Connection extends Thread{
     public static int number = 0; // nombre de threads contenant des connections
@@ -32,7 +32,7 @@ public class Connection extends Thread{
             this.is = new DataInputStream(socket.getInputStream());
             this.os = new DataOutputStream(socket.getOutputStream());
 
-            // Operation est utilisé pour effectuer les opérations courantes sur le serveur
+            // Operation est utilise pour effectuer les operations courantes sur le serveur
             this.executor = new Operation(basePath, is, os);
         } catch (IOException e) {
             e.printStackTrace();
@@ -45,15 +45,15 @@ public class Connection extends Thread{
     }
 
     private void listenFlux() {
-        log("Waiting for a command");
+        //log("Waiting for a command");
         try{
             // on attend de recevoir un instruction du client
             String line = is.readUTF();
             try {
                 // on execute la commande
-                log("Run command " + line);
+                log(line);
                 String output = runCommand(line);
-                System.out.println("Command executed");
+                //System.out.println("Command executed");
                 os.writeUTF(output);
             } catch (IOException e) {
                 // capture des erreurs de flux
@@ -85,7 +85,7 @@ public class Connection extends Thread{
     }
 
     /**
-     * Cette methode execute la commande demandé, si celle-ci est possible.
+     * Cette methode execute la commande demande, si celle-ci est possible.
      * @param cmd : commande a executer : contient l'instruction et les eventuels arguments
      * @return le message a envoyer au client
      * @throws IOException
@@ -95,9 +95,9 @@ public class Connection extends Thread{
         String operation = cmd.split(" ")[0];
         String[] args = Arrays.copyOfRange(cmd.split(" "), 1, cmd.split(" ").length);
 
-        // on vérifie si l'opération est possible
+        // on vérifie si l'operation est possible
         if (!Arrays.asList(Operation.enabledOperations).contains(operation))
-                throw new CommandNotFoundException(operation, Operation.enabledOperations);
+            throw new CommandNotFoundException(operation, Operation.enabledOperations);
         // et on l'execute
         return executor.execute(operation, args);
     }
@@ -124,7 +124,7 @@ public class Connection extends Thread{
     /**
      * Formattage des messages en console du serveur, au format
      * [Adresse IP client : Port client // Date et Heure (min, sec)] : <message>
-     * @param message : commande ou information à afficher en console
+     * @param message : commande ou information a afficher en console
      */
     private void log(String message)
     {

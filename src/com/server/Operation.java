@@ -5,12 +5,13 @@ import com.utils.ZipFile;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Path.*;
 import java.nio.file.Paths;
 import java.util.Objects;
 
 /**
- * Operation permet d'executer les opérations serveur, telles que lire les fichiers, créer des dossiers ...
- * Excepté pour la lecture et l'écriture de flux de fichiers ( upload & download), cette classe ne communique pas avec le client.
+ * Operation permet d'executer les operations serveur, telles que lire les fichiers, creer des dossiers ...
+ * Excepte pour la lecture et l'ecriture de flux de fichiers ( upload & download), cette classe ne communique pas avec le client.
  * Autrement dit, le client ne recevra jamasi de message venant de cette classe. Tout cela ce passe dans la classe Connection.
  */
 public class Operation {
@@ -29,9 +30,9 @@ public class Operation {
     }
 
     /**
-     * Execute les operations définies
-     * @param operation opération a effectuer
-     * @param args arguments si nécessaire
+     * Execute les operations definies
+     * @param operation operation a effectuer
+     * @param args arguments si necessaire
      * @return Le message a renvoyer au client
      */
     public String execute(String operation, String[] args){
@@ -83,13 +84,13 @@ public class Operation {
     }
 
     /**
-     * Cette methode permet de se déplacer dans l'arboréscence des fichiers de stockage.
-     * Il y a une particularité pour l'argument ".." qui permet de remonter dans l'arborescence$
+     * Cette methode permet de se deplacer dans l'arborescence des fichiers de stockage.
+     * Il y a une particularite pour l'argument ".." qui permet de remonter dans l'arborescence.
      *
-     * On ne peut pas se déplacer vers un fichier en lui donnant unchemin absolue, mais uniquement un chemin relatif
+     * On ne peut pas se deplacer vers un fichier en lui donnant unchemin absolue, mais uniquement un chemin relatif
      *
-     * @param folderName : le nom nu dossier ou se déplacer
-     * @throws InvalidCommandExecutionException : si on esssaie de remonter trop haut dans l'arborescence, on bloque l'utilisateur pour protéger le serveur
+     * @param folderName : le nom nu dossier ou se deplacer
+     * @throws InvalidCommandExecutionException : si on esssaie de remonter trop haut dans l'arborescence, on bloque l'utilisateur pour proteger le serveur
      */
     private void changeDirectory(String folderName) throws InvalidCommandExecutionException {
         if (folderName.equals("..")) {
@@ -116,15 +117,26 @@ public class Operation {
      */
     private String list() {
         String[] pathnames = (new File(path)).list();
-        if (pathnames != null && pathnames.length > 0)
-            return String.join("\n", pathnames);
+        String[] fileTypes = new String[pathnames.length];
+        String[] typeWithNames =new String[pathnames.length];
+        if (pathnames != null && pathnames.length > 0) {
+            for(int i=0; i!=pathnames.length; i++) {
+                File file = new File(Paths.get(path, pathnames[i]).toString());
+                if (file.isFile()) fileTypes[i]="[File] ";
+                else fileTypes[i]="[Folder] ";
+                typeWithNames[i]=fileTypes[i]+pathnames[i];
+            }
+
+            return String.join("\n", typeWithNames);
+        }
+
         else return "Empty directory";
     }
 
     /**
-     * Permet de créer un dossier à partir du chemin courant
+     * Permet de creer un dossier a partir du chemin courant
      * @param dirName nom du nouveau dossier
-     * @throws InvalidCommandExecutionException : envoyé si le dossier existe déjà
+     * @throws InvalidCommandExecutionException : envoye si le dossier existe deja
      */
     private void makeDirectory(String dirName) throws InvalidCommandExecutionException {
         File file = new File(path, dirName);
@@ -138,8 +150,8 @@ public class Operation {
 
     /**
      * Permet de supprimer uin fichier ou un dossier
-     * @param filename : nom du fichier / dossier à supprimer
-     * @throws InvalidCommandExecutionException : envoyé si le fichier/dossier n'existe pas
+     * @param filename : nom du fichier / dossier a supprimer
+     * @throws InvalidCommandExecutionException : envoye si le fichier/dossier n'existe pas
      */
     private void deleteFile(String filename) throws InvalidCommandExecutionException {
         File file = new File(path, filename);
@@ -150,9 +162,9 @@ public class Operation {
     }
 
     /**
-     * Permet de télécherger un dossier du serveur vers le client
-     * @param filename nom du fichier à télécharger
-     * @throws InvalidCommandExecutionException : envoyé si le fichier ne peut pas être lue
+     * Permet de telecharger un dossier du serveur vers le client
+     * @param filename nom du fichier a telecharger
+     * @throws InvalidCommandExecutionException : envoye si le fichier ne peut pas etre lue
      */
     private void download(String filename, Boolean toZip) throws InvalidCommandExecutionException, IOException {
         if (toZip) {
@@ -160,7 +172,7 @@ public class Operation {
             filename = filename.concat(".zip");
         }
         try{
-            // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers... problème de mémoire
+            // on transfert tout le fichier d'un coup. Cela ne fonctionne pas pour les longs fichiers... probleme de memoire
             byte[] bytes = Files.readAllBytes(Paths.get(path, filename));
             int length = bytes.length;
             System.out.println(length);
@@ -169,35 +181,35 @@ public class Operation {
         } catch (IOException e){
             throw new InvalidCommandExecutionException("file " + filename + " does not exist");
         }
-        if(toZip) // on supprime l'archive crée une fois le transfert effectué
+        if(toZip) // on supprime l'archive cree une fois le transfert effectue
             (new File(path, filename)).delete();
     }
 
     /**
-     * Permet de recevoir un fiichier d'un client
+     * Permet de recevoir un fichier d'un client
      * @param filename nom du fichier
-     * @throws IOException Renvoyé si le client n'envoie pas bien le fichier : on doit d'abord recevoir la taille du fichier puis ses données
-     * @throws InvalidCommandExecutionException Renvoyé si le fichier existe déjà
+     * @throws IOException Renvoye si le client n'envoie pas bien le fichier : on doit d'abord recevoir la taille du fichier puis ses donnÃ©es
+     * @throws InvalidCommandExecutionException Renvoye si le fichier existe deja 
      *
-     * NB : On capture toujours le flux du fichier même si on a une InvalidCommandExecutionException,
-     * car le client l'a déjà envoyé. Ainsi, on clean le stream de données.
+     * NB : On capture toujours le flux du fichier meme si on a une InvalidCommandExecutionException,
+     * car le client l'a deja  envoye. Ainsi, on clean le stream de donnees.
      */
     private void upload(String filename) throws IOException, InvalidCommandExecutionException {
-        String fullPath = Path.of(path, filename).toString();
+        String fullPath = Paths.get(path, filename).toString();
 
-        // on lit les données envoyées, correspondant au fichier a télécharger
+        // on lit les donnees envoyees, correspondant au fichier a telecharger
         int length = is.readInt();
         byte[] buffer  = new byte [length];
         int count = 0;
         while (count<length) {
             count+= is.read(buffer, count, length-count);
         }
-        // si le fichier existe déjà, on écrit rien
+        // si le fichier existe deja , on ecrit rien
         if ((new File(fullPath)).exists())
             throw new InvalidCommandExecutionException("File " + fullPath + " already exists");
-        // sinon, on écrit le fichier
-        // on ferme toujours le fichier pour éviter de le garder en mémoire, via l'automatic ressource managment
-        try (OutputStream outFile = new FileOutputStream(Path.of(path, filename).toString())) {
+        // sinon, on ecrit le fichier
+        // on ferme toujours le fichier pour eviter de le garder en memoire, via l'automatic ressource managment
+        try (OutputStream outFile = new FileOutputStream(Paths.get(path, filename).toString())) {
             outFile.write(buffer);
             outFile.flush();
         }
