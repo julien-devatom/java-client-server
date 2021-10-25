@@ -88,6 +88,10 @@ public class Client {
             // on initialise les connections avec le serveur
             os = new DataOutputStream(connection.getOutputStream());
             is = new DataInputStream(connection.getInputStream());
+
+
+            System.out.println("Client connected");
+            listen();
         } catch (ConnectException | UnknownHostException e) {
             System.out.println("Server" + Client.HOST + ":" + Client.PORT + " Unreachable");
             Client.HOST = "";
@@ -252,8 +256,6 @@ public class Client {
     public static void main(String[] args) {
         try {
             Client client = new Client();
-            System.out.println("Client connected");
-            client.listen();
 
         } catch (IOException e) {
             e.printStackTrace();
